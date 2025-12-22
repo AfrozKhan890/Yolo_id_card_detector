@@ -1,0 +1,34 @@
+/* Custom colors */
+:root {
+    --happy: #FF6B6B;
+    --neutral: #4ECDC4;
+    --sad: #45B7D1;
+    --primary: #6C63FF;
+    --dark: #2D3047;
+    --light: #F8F9FA;
+}
+
+/* Background colors */
+.bg-happy { background-color: #FF6B6B !important; }
+.bg-neutral { background-color: #4ECDC4 !important; }
+.bg-sad { background-color: #45B7D1 !important; }
+
+/* Text colors */
+.text-happy { color: #FF6B6B !important; }
+.text-neutral { color: #4ECDC4 !important; }
+.text-sad { color: #45B7D1 !important; }
+
+/* Border colors */
+.border-happy { border-color: #FF6B6B !important; }
+.border-neutral { border-color: #4ECDC4 !important; }
+.border-sad { border-color: #45B7D1 !important; }
+
+/* Badge colors */
+.badge-happy { background-color: #FF6B6B !important; }
+.badge-neutral { background-color: #4ECDC4 !important; }
+.badge-sad { background-color: #45B7D1 !important; }
+
+/* Progress bar colors */
+.progress-bar-happy { background-color: #FF6B6B !important; }
+.progress-bar-neutral { background-color: #4ECDC4 !important; }
+.progress-bar-sad { background-color: #45B7D1 !important; }

@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MoodSense - Emotion Detector</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --happy: #FF6B6B;    /* Coral Red */
+            --neutral: #4ECDC4;  /* Turquoise */
+            --sad: #45B7D1;      /* Sky Blue */
+            --primary: #6C63FF;  /* Purple */
+            --dark: #2D3047;     /* Dark Blue */
+            --light: #F8F9FA;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .navbar {
+            background: var(--dark) !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .nav-link {
+            color: white !important;
+            font-weight: 500;
+            padding: 10px 15px !important;
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .nav-link:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-2px);
+        }
+        
+        .nav-link.active {
+            background: var(--primary);
+            color: white !important;
+        }
+        
+        .container-main {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-top: 100px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .upload-area {
+            border: 3px dashed var(--primary);
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: var(--light);
+        }
+        
+        .upload-area:hover {
+            background: #e9ecef;
+            transform: translateY(-5px);
+            border-color: var(--happy);
+        }
+        
+        .performance-card {
+            background: var(--light);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .performance-card.success {
+            border-left-color: var(--happy);
+        }
+        
+        .performance-card.warning {
+            border-left-color: var(--neutral);
+        }
+        
+        .dominant-emotion {
+            font-size: 4rem;
+            font-weight: bold;
+            padding: 30px;
+            border-radius: 20px;
+            margin: 20px 0;
+            color: white;
+            animation: pulse 2s infinite;
+            text-align: center;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        .emotion-guide-card {
+            padding: 15px;
+            background: var(--light);
+            border-radius: 10px;
+            height: 100%;
+            border-left: 5px solid;
+        }
+        
+        .happy-guide { border-left-color: var(--happy) !important; }
+        .neutral-guide { border-left-color: var(--neutral) !important; }
+        .sad-guide { border-left-color: var(--sad) !important; }
+        
+        .btn-custom {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-custom:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(108, 99, 255, 0.3);
+        }
+        
+        .confidence-bar {
+            background: var(--light);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        footer {
+            background: var(--dark);
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
+        }
+        
+        /* Spinner */
+        .spinner-large {
+            width: 4rem;
+            height: 4rem;
+        }
+        
+        /* Face card styles */
+        .face-card {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s;
+        }
+        
+        .face-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .face-preview {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+            border: 2px solid #dee2e6;
+        }
+        
+        .face-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        
+        .face-badge.happy { background-color: var(--happy); }
+        .face-badge.neutral { background-color: var(--neutral); }
+        .face-badge.sad { background-color: var(--sad); }
+        
+        .face-stats {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .faces-container {
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        /* Scrollbar styling */
+        .faces-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .faces-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        
+        .faces-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        
+        .faces-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/">
+                <i class="fas fa-smile-beam me-2"></i>Emotion Detector
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/">
+                            <i class="fas fa-home me-1"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/webcam">
+                            <i class="fas fa-camera me-1"></i> Image Capture
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/live-webcam">
+                            <i class="fas fa-camera me-1"></i> Live Webcam
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/bulk">
+                            <i class="fas fa-images me-1"></i> Bulk Upload
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/history">
+                            <i class="fas fa-history me-1"></i> History
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/export-excel">
+                            <i class="fas fa-file-export me-1"></i> Export
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container container-main">
+        <!-- Header -->
+        <div class="row mb-5">
+            <div class="col-12 text-center">
+                <h1 class="display-4 fw-bold mb-3" style="color: var(--primary);">
+                    <i class="fas fa-brain me-2"></i> AI Emotion Detector
+                </h1>
+                <p class="lead" style="color: var(--dark);">
+                    Detect emotions from your photos - Happy, Neutral or Sad
+                </p>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Left Column: Upload & Controls -->
+            <div class="col-md-5">
+                <!-- Upload Card -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header text-white" style="background: var(--primary);">
+                        <h5 class="mb-0"><i class="fas fa-upload me-2"></i> Upload Image</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="upload-area" id="uploadArea">
+                            <i class="fas fa-cloud-upload-alt fa-3x mb-3" style="color: var(--primary);"></i>
+                            <p>Drag & drop or click to browse</p>
+                            <input type="file" id="imageInput" accept="image/*" hidden>
+                            <button class="btn btn-custom mt-3" onclick="document.getElementById('imageInput').click()">
+                                <i class="fas fa-folder-open me-2"></i> Choose File
+                            </button>
+                        </div>
+                        
+                        <!-- Preview -->
+                        <div class="mt-4 text-center">
+                            <img id="imagePreview" class="img-fluid rounded shadow" 
+                                 style="max-height: 250px; display: none; border: 3px solid var(--light);">
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <a href="/webcam" class="btn btn-success me-2">
+                                <i class="fas fa-camera me-2"></i> Use Webcam
+                            </a>
+                            <a href="/bulk" class="btn btn-info">
+                                <i class="fas fa-images me-2"></i> Multiple Images
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Model Performance -->
+                <div class="card shadow-sm border-0">
+                    <div class="card-header text-white" style="background: #45B7D1;">
+                        <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i> Model Performance</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6 mb-3">
+                                <div class="performance-card success">
+                                    <h6>Training</h6>
+                                    <h4>{{ performance.training_accuracy }}%</h4>
+                                </div>
+                            </div>
+                            <div class="col-6 mb-3">
+                                <div class="performance-card warning">
+                                    <h6>Validation</h6>
+                                    <h4>{{ performance.validation_accuracy }}%</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i> 
+                                Trained on {{ performance.dataset_size }} for {{ performance.epochs }} epochs
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Results -->
+            <div class="col-md-7">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-header text-white" style="background: #4ECDC4;">
+                        <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i> Emotion Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="resultSection" style="display: none;">
+                            <!-- Faces Summary -->
+                            <div id="facesSummary" class="mb-4" style="display: none;">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="fas fa-users me-2"></i> Multiple Faces Detected
+                                </h6>
+                                <div class="faces-container" id="facesContainer"></div>
+                            </div>
+                            
+                            <!-- Dominant Emotion Display -->
+                            <div id="dominantSection">
+                                <div class="text-center mb-4">
+                                    <h4 id="resultTitle">Detected Emotion:</h4>
+                                    <div id="dominantEmotion" class="dominant-emotion"></div>
+                                    <div id="funnyText" class="h5 mt-3"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Confidence -->
+                            <div class="confidence-bar">
+                                <h6 class="fw-bold">Confidence Level</h6>
+                                <div id="confidenceMeter"></div>
+                                <div class="mt-3">
+                                    <small class="text-muted" id="predictionInfo"></small>
+                                </div>
+                            </div>
+                            
+                            <!-- Toggle Button for Multiple Faces -->
+                            <div id="toggleFacesBtn" class="text-center mt-3" style="display: none;">
+                                <button class="btn btn-outline-primary btn-sm" onclick="toggleFacesView()">
+                                    <i class="fas fa-exchange-alt me-2"></i> Switch to All Faces View
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Empty State -->
+                        <div id="emptyState" class="text-center" style="padding: 60px 0;">
+                            <i class="fas fa-user-circle fa-5x mb-3" style="color: #dee2e6;"></i>
+                            <h4 class="text-muted mb-3">No Image Uploaded</h4>
+                            <p class="text-muted">Upload a photo to see emotion analysis</p>
+                        </div>
+                        
+                        <!-- Emotion Guide -->
+                        <div class="mt-5">
+                            <h6 class="fw-bold mb-3">
+                                <i class="fas fa-smile me-2"></i> What We Detect
+                            </h6>
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <div class="emotion-guide-card happy-guide">
+                                        <h6 class="fw-bold" style="color: var(--happy);">😊 Happy</h6>
+                                        <small class="text-muted">{{ funny_labels['happy'] }}</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="emotion-guide-card neutral-guide">
+                                        <h6 class="fw-bold" style="color: var(--neutral);">😐 Neutral</h6>
+                                        <small class="text-muted">{{ funny_labels['neutral'] }}</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <div class="emotion-guide-card sad-guide">
+                                        <h6 class="fw-bold" style="color: var(--sad);">😢 Sad</h6>
+                                        <small class="text-muted">{{ funny_labels['sad'] }}</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer Stats -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <h5 class="fw-bold">{{ performance.training_accuracy }}%</h5>
+                                <small class="text-muted">Training Accuracy</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h5 class="fw-bold">{{ performance.validation_accuracy }}%</h5>
+                                <small class="text-muted">Validation Accuracy</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h5 class="fw-bold">{{ performance.epochs }}</h5>
+                                <small class="text-muted">Training Epochs</small>
+                            </div>
+                            <div class="col-md-3">
+                                <h5 class="fw-bold">{{ performance.dataset_size }}</h5>
+                                <small class="text-muted">Training Images</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container text-center">
+            <p class="mb-2">
+                <strong>MoodSense AI</strong> | 3-Emotion Detector | 
+                Accuracy: {{ performance.validation_accuracy }}%
+            </p>
+            <small class="text-muted">
+                © 2024 Emotion Detection System | All predictions stored in database
+            </small>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    $(document).ready(function() {
+        const uploadArea = $('#uploadArea');
+        const imageInput = $('#imageInput');
+        const imagePreview = $('#imagePreview');
+        const resultSection = $('#resultSection');
+        const emptyState = $('#emptyState');
+        const facesSummary = $('#facesSummary');
+        const dominantSection = $('#dominantSection');
+        const toggleFacesBtn = $('#toggleFacesBtn');
+        
+        let allFacesData = [];
+        let currentView = 'dominant'; // 'dominant' or 'all'
+        
+        // File upload handling
+        imageInput.on('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleImageUpload(file);
+            }
+        });
+        
+        // Drag and drop
+        uploadArea.on('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.css('background', '#e9ecef');
+        });
+        
+        uploadArea.on('dragleave', function() {
+            uploadArea.css('background', '#F8F9FA');
+        });
+        
+        uploadArea.on('drop', function(e) {
+            e.preventDefault();
+            uploadArea.css('background', '#F8F9FA');
+            const file = e.originalEvent.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleImageUpload(file);
+            } else {
+                showAlert('Please drop an image file', 'warning');
+            }
+        });
+        
+        // Click to upload
+        uploadArea.on('click', function() {
+            imageInput.click();
+        });
+        
+        function handleImageUpload(file) {
+            if (!file.type.match('image.*')) {
+                showAlert('Please select an image file (JPG, PNG)', 'warning');
+                return;
+            }
+            
+            // File size check (max 5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showAlert('File size too large! Maximum 5MB allowed.', 'warning');
+                return;
+            }
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                // Show preview
+                imagePreview.attr('src', e.target.result);
+                imagePreview.show();
+                
+                // Hide empty state, show results
+                emptyState.hide();
+                resultSection.show();
+                
+                // Reset views
+                allFacesData = [];
+                currentView = 'dominant';
+                facesSummary.hide();
+                dominantSection.show();
+                toggleFacesBtn.hide();
+                
+                // Show loading
+                $('#dominantEmotion').html(`
+                    <div class="text-center">
+                        <div class="spinner-border spinner-large text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">Analyzing your photo...</p>
+                    </div>
+                `);
+                
+                $('#funnyText').html('');
+                $('#confidenceMeter').html('');
+                $('#facesContainer').html('');
+                
+                // Send to server for prediction
+                predictImage(file);
+            }
+            
+            reader.onerror = function() {
+                showAlert('Error reading file', 'danger');
+            }
+            
+            reader.readAsDataURL(file);
+        }
+        
+        function predictImage(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            $.ajax({
+                url: '/predict',
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                timeout: 30000, // 30 seconds timeout
+                success: function(response) {
+                    console.log("Server response:", response); // Debug
+                    if (response.success) {
+                        // Check if we have results
+                        if (response.all_faces && response.all_faces.length > 0) {
+                            allFacesData = response.all_faces;
+                            
+                            // Display dominant emotion first
+                            if (response.main_result) {
+                                displaySingleResult(response.main_result);
+                            }
+                            
+                            // If multiple faces found, show toggle button
+                            if (response.has_multiple_faces && response.total_faces > 1) {
+                                showAlert(`Found ${response.total_faces} faces!`, 'info');
+                                displayAllFaces(allFacesData);
+                                toggleFacesBtn.show();
+                                $('#resultTitle').html('Dominant Emotion:');
+                            } else {
+                                $('#resultTitle').html('Detected Emotion:');
+                            }
+                            
+                            showAlert('Analysis complete!', 'success');
+                        } else {
+                            showAlert('No emotion detected in the image', 'warning');
+                            resetUI();
+                        }
+                    } else {
+                        showAlert('Error: ' + (response.error || 'Unknown error'), 'danger');
+                        resetUI();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error("AJAX error:", status, error); // Debug
+                    if (status === 'timeout') {
+                        showAlert('Request timeout. Please try again.', 'danger');
+                    } else {
+                        showAlert('Error connecting to server: ' + error, 'danger');
+                    }
+                    resetUI();
+                }
+            });
+        }
+        
+        function displaySingleResult(data) {
+            if (!data) {
+                showAlert('No prediction data received', 'warning');
+                return;
+            }
+            
+            // Update time
+            const now = new Date();
+            $('#predictionInfo').html(`
+                <i class="fas fa-clock me-1"></i> ${now.toLocaleTimeString()} | 
+                <i class="fas fa-id-card ms-2 me-1"></i> ID: ${data.id || 'N/A'} |
+                <i class="fas fa-user ms-2 me-1"></i> Face ${data.face_index || 1}
+            `);
+            
+            // Show SINGLE emotion only
+            $('#dominantEmotion').html(`
+                <div style="background-color: ${data.color || '#6C63FF'}; padding: 40px; border-radius: 20px;">
+                    <h1 class="display-1">${data.icon || '😐'}</h1>
+                    <h2 class="fw-bold text-white">${(data.emotion || 'neutral').toUpperCase()}</h2>
+                </div>
+            `);
+            
+            // Show funny text
+            $('#funnyText').html(`
+                <div class="alert alert-light" style="border-left: 4px solid ${data.color || '#6C63FF'};">
+                    <h5 class="mb-0">${data.funny_text || 'No description available'}</h5>
+                </div>
+            `);
+            
+            // Show confidence meter
+            const confidence = data.confidence || 0;
+            $('#confidenceMeter').html(`
+                <div class="progress mt-2" style="height: 25px; border-radius: 12px;">
+                    <div class="progress-bar" 
+                         style="width: 0%; background-color: ${data.color || '#6C63FF'}; border-radius: 12px;"
+                         data-width="${confidence}">
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <small>0%</small>
+                    <small class="fw-bold">${confidence.toFixed(2)}% Confidence</small>
+                    <small>100%</small>
+                </div>
+            `);
+            
+            // Animate progress bar
+            setTimeout(() => {
+                $(`.progress-bar[data-width="${confidence}"]`).css('width', confidence + '%');
+            }, 500);
+        }
+        
+        function displayAllFaces(facesData) {
+            let html = '';
+            
+            // Sort faces by index
+            facesData.sort((a, b) => a.face_index - b.face_index);
+            
+            facesData.forEach(face => {
+                const emotion = face.emotion || 'neutral';
+                const color = face.color || '#6C63FF';
+                const icon = face.icon || '😐';
+                const confidence = face.confidence || 0;
+                const funnyText = face.funny_text || 'No description';
+                
+                html += `
+                    <div class="face-card">
+                        <div class="row align-items-center">
+                            <div class="col-3">
+                                <img src="/static/uploads/${face.filename}" 
+                                     class="face-preview" 
+                                     alt="Face ${face.face_index}"
+                                     title="Face ${face.face_index}">
+                            </div>
+                            <div class="col-9">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div>
+                                        <span class="face-badge ${emotion}">
+                                            ${icon} Face ${face.face_index}: ${emotion.toUpperCase()}
+                                        </span>
+                                    </div>
+                                    <div class="fw-bold" style="color: ${color}">
+                                        ${confidence.toFixed(1)}%
+                                    </div>
+                                </div>
+                                <div class="face-stats">
+                                    <div class="mb-1">
+                                        <strong>Confidence:</strong> 
+                                        <div class="progress" style="height: 8px;">
+                                            <div class="progress-bar" 
+                                                 style="width: ${confidence}%; background-color: ${color}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mb-1">
+                                        <strong>Message:</strong> ${funnyText}
+                                    </div>
+                                    <div class="text-muted">
+                                        <small>
+                                            <i class="fas fa-id-card me-1"></i> ${face.id || 'N/A'}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            $('#facesContainer').html(html);
+        }
+        
+        function toggleFacesView() {
+            if (currentView === 'dominant') {
+                // Switch to all faces view
+                dominantSection.hide();
+                facesSummary.show();
+                $('#toggleFacesBtn button').html(`
+                    <i class="fas fa-exchange-alt me-2"></i> Switch to Dominant View
+                `);
+                $('#toggleFacesBtn button').on('click', function() {
+                    toggleFacesView();
+                });
+                currentView = 'all';
+            } else {
+                // Switch to dominant view
+                facesSummary.hide();
+                dominantSection.show();
+                $('#toggleFacesBtn button').html(`
+                    <i class="fas fa-exchange-alt me-2"></i> Switch to All Faces View
+                `);
+                $('#toggleFacesBtn button').on('click', function() {
+                    toggleFacesView();
+                });
+                currentView = 'dominant';
+            }
+        }
+        
+        function resetUI() {
+            $('#dominantEmotion').html(`
+                <div class="text-center text-muted">
+                    <i class="fas fa-times-circle fa-3x"></i>
+                    <p class="mt-3">Analysis failed</p>
+                </div>
+            `);
+            facesSummary.hide();
+            dominantSection.show();
+            toggleFacesBtn.hide();
+        }
+        
+        function showAlert(message, type) {
+            // Remove existing alerts
+            $('.alert').remove();
+            
+            const alert = $(`
+                <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
+                     style="top: 80px; right: 20px; z-index: 1050; max-width: 300px;">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `);
+            
+            $('body').append(alert);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                alert.alert('close');
+            }, 5000);
+        }
+    });
+    </script>
+</body>
+</html>

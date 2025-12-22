@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 Prediction History - MoodSense Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Poppins', sans-serif;
+            padding-top: 70px;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-glass {
+            background: rgba(255, 255, 255, 0.9) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .badge-happy { 
+            background: linear-gradient(135deg, #FF6B6B 0%, #FF8E8E 100%) !important; 
+            color: white !important;
+        }
+        .badge-neutral { 
+            background: linear-gradient(135deg, #4ECDC4 0%, #6ED7D0 100%) !important; 
+            color: white !important;
+        }
+        .badge-sad { 
+            background: linear-gradient(135deg, #45B7D1 0%, #67C7E1 100%) !important; 
+            color: white !important;
+        }
+        
+        .search-box {
+            background: rgba(255, 255, 255, 0.7);
+            border: 2px solid #667eea;
+            border-radius: 50px;
+            padding: 10px 20px;
+            transition: all 0.3s;
+        }
+        
+        .search-box:focus {
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
+        }
+        
+        .table-hover tbody tr:hover {
+            background: rgba(102, 126, 234, 0.1) !important;
+            transform: translateX(5px);
+            transition: all 0.3s;
+        }
+        
+        .progress {
+            height: 10px;
+            border-radius: 5px;
+        }
+        
+        .progress-bar-happy { background-color: #FF6B6B !important; }
+        .progress-bar-neutral { background-color: #4ECDC4 !important; }
+        .progress-bar-sad { background-color: #45B7D1 !important; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light nav-glass fixed-top">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-primary" href="{{ url_for('home') }}">
+                <i class="fas fa-history me-2"></i> Prediction History
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('home') }}">
+                    <i class="fas fa-home me-1"></i> Home
+                </a>
+                <a class="nav-link" href="{{ url_for('export_excel') }}">
+                    <i class="fas fa-file-excel me-1"></i> Excel
+                </a>
+                <a class="nav-link" href="{{ url_for('export_csv') }}">
+                    <i class="fas fa-file-csv me-1"></i> CSV
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="glass-card p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h2 class="fw-bold mb-2">
+                                <i class="fas fa-database me-2"></i> Prediction Database
+                            </h2>
+                            <p class="text-muted mb-0">All your analyzed images with timestamps</p>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <input type="text" id="searchInput" class="form-control search-box" 
+                                       placeholder="Search by ID or filename...">
+                                <select id="emotionFilter" class="form-select search-box ms-2" style="width: auto;">
+                                    <option value="">All Emotions</option>
+                                    <option value="happy">😊 Happy</option>
+                                    <option value="neutral">😐 Neutral</option>
+                                    <option value="sad">😢 Sad</option>
+                                </select>
+                                <button class="btn btn-primary ms-2" onclick="searchPredictions()">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="glass-card p-3 text-center">
+                    <h3 class="fw-bold text-primary" id="totalCount">0</h3>
+                    <small class="text-muted">Total Predictions</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card p-3 text-center">
+                    <h3 class="fw-bold" style="color: #FF6B6B;" id="happyCount">0</h3>
+                    <small class="text-muted">😊 Happy</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card p-3 text-center">
+                    <h3 class="fw-bold" style="color: #4ECDC4;" id="neutralCount">0</h3>
+                    <small class="text-muted">😐 Neutral</small>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card p-3 text-center">
+                    <h3 class="fw-bold" style="color: #45B7D1;" id="sadCount">0</h3>
+                    <small class="text-muted">😢 Sad</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="glass-card p-4">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="historyTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Image</th>
+                                    <th>Emotion</th>
+                                    <th>Confidence</th>
+                                    <th>Message</th>
+                                    <th>Timestamp</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyBody">
+                                {% for pred in predictions %}
+                                <tr>
+                                    <td><code>{{ pred[0] }}</code></td>
+                                    <td>
+                                        {% if pred[1] %}
+                                        <img src="{{ url_for('static', filename='uploads/' + pred[1]) }}" 
+                                             class="rounded" style="width: 60px; height: 60px; object-fit: cover;">
+                                        {% else %}
+                                        <span class="text-muted">No image</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if pred[2] == 'happy' %}
+                                        <span class="badge badge-happy">😊 {{ pred[2] }}</span>
+                                        {% elif pred[2] == 'neutral' %}
+                                        <span class="badge badge-neutral">😐 {{ pred[2] }}</span>
+                                        {% else %}
+                                        <span class="badge badge-sad">😢 {{ pred[2] }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="progress flex-grow-1 me-2">
+                                                <div class="progress-bar 
+                                                    {% if pred[2] == 'happy' %}progress-bar-happy
+                                                    {% elif pred[2] == 'neutral' %}progress-bar-neutral
+                                                    {% else %}progress-bar-sad{% endif %}"
+                                                     style="width: {{ pred[3] }}%">
+                                                </div>
+                                            </div>
+                                            <span class="fw-bold">{{ "%.2f"|format(pred[3]) }}%</span>
+                                        </div>
+                                    </td>
+                                    <td><small>{{ pred[4] }}</small></td>
+                                    <td><small>{{ pred[5] }}</small></td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                onclick="viewPrediction('{{ pred[0] }}')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    {% if not predictions %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-database fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">No predictions yet</h4>
+                        <p class="text-muted">Start analyzing images to see history here</p>
+                        <a href="{{ url_for('home') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i> Analyze First Image
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Update counts
+        function updateCounts() {
+            const rows = $('#historyBody tr');
+            $('#totalCount').text(rows.length);
+            $('#happyCount').text($('.badge-happy').length);
+            $('#neutralCount').text($('.badge-neutral').length);
+            $('#sadCount').text($('.badge-sad').length);
+        }
+        
+        // Search functionality
+        function searchPredictions() {
+            const query = $('#searchInput').val().toLowerCase();
+            const emotion = $('#emotionFilter').val();
+            
+            $('#historyBody tr').each(function() {
+                const id = $(this).find('code').text().toLowerCase();
+                const filename = $(this).find('td:nth-child(2) img').attr('src') || '';
+                const predEmotion = $(this).find('.badge').text().toLowerCase();
+                
+                const matchesQuery = id.includes(query) || filename.includes(query);
+                const matchesEmotion = !emotion || predEmotion.includes(emotion);
+                
+                $(this).toggle(matchesQuery && matchesEmotion);
+            });
+            
+            updateCounts();
+        }
+        
+        // View prediction details
+        function viewPrediction(id) {
+            alert('Prediction ID: ' + id + '\nMore details would open in a modal');
+        }
+        
+        $(document).ready(function() {
+            updateCounts();
+            
+            $('#searchInput').on('keyup', searchPredictions);
+            $('#emotionFilter').on('change', searchPredictions);
+        });
+    </script>
+</body>
+</html>
